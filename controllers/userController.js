@@ -1,10 +1,14 @@
+require('express-async-errors');
+
 const User = require('../models/User');
+const AppError = require('../utils/AppError');
 
 const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
   const dupUser = await User.findOne({ email: email });
+
   if (dupUser) {
-    return next(new Error('user already exist'));
+    return next(new AppError('user already exist', 400));
   }
   const newUser = await User.create({
     username: username,
@@ -16,7 +20,6 @@ const registerUser = async (req, res) => {
     newUser,
   });
 };
-
 
 module.exports = {
   registerUser,

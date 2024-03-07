@@ -1,4 +1,7 @@
+require('express-async-errors');
+
 const Category = require('../models/Category');
+const AppError = require('../utils/AppError');
 
 const createCategory = async (req, res) => {
   const category = req.body;
@@ -9,7 +12,7 @@ const createCategory = async (req, res) => {
 const getALlCAtegories = async (req, res, next) => {
   const categories = await Category.find();
   if (!categories) {
-    return;
+    return next(new AppError('there is no categories yet ', 404));
   }
   res.status(200).json({
     status: 'success',
@@ -22,14 +25,13 @@ const getCategory = async (req, res, next) => {
   const category = await Category.findById(id);
 
   if (!category) {
-    return next(new Error('there is no category with that id '));
+    return next(new AppError('there is no category with that id ', 404));
   }
 
   res.status(200).json({
     status: 'success',
-    category
-  })
-
+    category,
+  });
 };
 
 const updateCategory = async (req, res, next) => {
@@ -38,7 +40,7 @@ const updateCategory = async (req, res, next) => {
 
   const category = await Category.findById(id);
   if (!category) {
-    return next(new Error('there is no category with that id '));
+    return next(new AppError('there is no category with that id ', 404));
   }
 
   const newCategory = await Category.findByIdAndUpdate(id, { name: name });
@@ -54,7 +56,7 @@ const deleteCategory = async (req, res, next) => {
 
   const category = await Category.findById(id);
   if (!category) {
-    return next(new Error('there is no category with that id '));
+    return next(new AppError('there is no category with that id ', 404));
   }
   await Category.findByIdAndDelete(id);
 
