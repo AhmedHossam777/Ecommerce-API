@@ -8,6 +8,9 @@ const connectDB = require('./config/connectDB');
 const userRoutes = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 
+const notFound = require('./middleware/notFound');
+const globalErrorHandler = require( './middleware/globalErrorHandler' );
+
 const app = express();
 app.use(express.json());
 
@@ -20,9 +23,8 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 
 // Error handling
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
+app.use(globalErrorHandler)
+app.use(notFound);
 
 const port = process.env.PORT || 3000;
 app.listen(port, async () => {
