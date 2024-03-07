@@ -14,15 +14,8 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Routes
-app.get('/', (req, res) => {
-  res.send('Hello World');
-});
-
-app.use('/users', userRoutes);
-app.use('/categories', categoryRoutes);
-
-
-
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/categories', categoryRoutes);
 
 // Error handling
 app.use((req, res) => {
