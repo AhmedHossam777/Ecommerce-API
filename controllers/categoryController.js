@@ -44,6 +44,7 @@ const updateCategory = async (req, res, next) => {
   }
 
   const newCategory = await Category.findByIdAndUpdate(id, { name: name });
+  await newCategory.save();
 
   res.status(200).json({
     status: 'success',
