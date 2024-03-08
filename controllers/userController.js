@@ -2,6 +2,7 @@ require('express-async-errors');
 
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
+const { generateAccessToken } = require('../utils/generateJWT');
 
 const registerUser = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -15,10 +16,48 @@ const registerUser = async (req, res, next) => {
     email: email,
     password: password,
   });
+
+  const token = await generateAccessToken(newUser);
+
   res.status(201).json({
     status: 'success',
-    newUser,
+    username: username,
+    email: email,
+    token
   });
+};
+
+const login = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    return next(new AppError('Please provide email and password', 400));
+
+  const user = await User.findOne({ email: email }).select('+password');
+  if (!user) {
+    return next(new AppError('User does not exist', 404));
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    return next(new AppError('Invalid credentials', 400));
+  }
+
+  const token = await generateAccessToken(user);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'logged in successfully',
+    token,
+  });
+};
+
+const profileImageUpload = async (req, res, next) => {
+  //! finish after auth
+  if (!req.file) {
+    return next(new AppError('please upload an image', 400));
+  }
+  const id = req.user.id;
 };
 
 const getAllUsers = async (req, res, next) => {
@@ -87,5 +126,7 @@ module.exports = {
   getAllUsers,
   deleteUser,
   getUser,
-  updateUser
+  updateUser,
+  profileImageUpload,
+  login
 };

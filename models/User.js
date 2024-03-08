@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema({
     min: 6,
     select: false,
   },
+  profilePhoto: {
+    type: String,
+  },
 });
 
 userSchema.pre('save', async function (next) {
@@ -35,7 +38,7 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-userSchema.method.comparePassword = async function (password) {
+userSchema.methods.comparePassword = async function (password) {
   try {
     const isCorrect = await bcrypt.compare(password, this.password);
     return isCorrect;
