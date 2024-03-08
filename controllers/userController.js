@@ -3,6 +3,7 @@ require('express-async-errors');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const { generateAccessToken } = require('../utils/generateJWT');
+const sendEmail = require('../utils/sendEmail');
 
 const registerUser = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -140,6 +141,27 @@ const changePassword = async (req, res, next) => {
   });
 };
 // const user = await User.findOne({ _id: req.user.id })
+const forgetPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      console.log('User not found');
+      return next(new AppError('There is no user with that email!', 404));
+    }
+    const resetToken = await user.createPasswordResetToken();
+    await user.save();
+    await sendEmail({ email: email, subject: 'Reset Token', message: resetToken });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Reset token sent to your email'
+    });
+  } catch (error) {
+    console.error('Error in forgetPassword:', error);
+    next(error);
+  }
+};
 
 const deleteUser = async (req, res, next) => {
   const id = req.params.id;
@@ -164,4 +186,5 @@ module.exports = {
   profileImageUpload,
   login,
   changePassword,
+  forgetPassword,
 };

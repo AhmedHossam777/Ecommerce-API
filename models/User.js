@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -23,6 +25,8 @@ const userSchema = new mongoose.Schema({
   profilePhoto: {
     type: String,
   },
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 });
 
 userSchema.pre('save', async function (next) {
@@ -47,6 +51,20 @@ userSchema.methods.comparePassword = async function (password) {
   } catch (error) {
     throw new Error(error);
   }
+};
+
+userSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex'); // create random token with the 32 character and hex encoding
+
+  this.passwordResetToken = crypto // start to encrypt the token in database
+    .createHash('sha256') // the algorithm that will be using in the encryption
+    .update(resetToken) // pass to update the token u want to encrypt
+    .digest('hex'); // the encoding of the token
+
+  console.log({ resetToken }, this.passwordResetToken);
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);
