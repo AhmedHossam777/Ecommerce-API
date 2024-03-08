@@ -98,7 +98,6 @@ const getUser = async (req, res, next) => {
 };
 
 const updateUser = async (req, res, next) => {
-  //! add isLogin middleware before
   const { username, email } = req.body;
 
   const user = await User.findOne({ _id: req.user.id });
@@ -111,7 +110,7 @@ const updateUser = async (req, res, next) => {
   user.email = email;
 
   await user.save();
-  
+
   res.status(200).json({
     status: 'success',
     user,
