@@ -23,7 +23,7 @@ const registerUser = async (req, res, next) => {
     status: 'success',
     username: username,
     email: email,
-    token
+    token,
   });
 };
 
@@ -53,11 +53,24 @@ const login = async (req, res, next) => {
 };
 
 const profileImageUpload = async (req, res, next) => {
-  //! finish after auth
+  const user = await User.findOne({ _id: req.user.id });
+
+  if (!user) {
+    return next(new AppError('User does not exist', 400));
+  }
+
   if (!req.file) {
     return next(new AppError('please upload an image', 400));
   }
-  const id = req.user.id;
+
+  user.profilePhoto = req.file.path;
+  await user.save();
+  
+  res.status(200).json({
+    status: 'success',
+    data: 'Photo uploaded successfully',
+    user,
+  });
 };
 
 const getAllUsers = async (req, res, next) => {
@@ -86,18 +99,17 @@ const getUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   //! add isLogin middleware before
-  const id = req.params.id;
-  const { username, email, password } = req.body;
+  const { username, email } = req.body;
 
-  const user = await User.findById(id);
+  const user = await User.findOne({ _id: req.user.id });
+
   if (!user) {
-    return next(new AppError('user does not exist', 404));
+    return next(new AppError('unAuthorized', 401));
   }
 
   const newUser = await User.findByIdAndUpdate(id, {
     username: username,
     email: email,
-    password: password,
   });
 
   await newUser.save();
@@ -106,6 +118,30 @@ const updateUser = async (req, res, next) => {
     newUser,
   });
 };
+
+const changePassword = async (req, res, next) => {
+  const password = req.body.password;
+  const newPassword = req.body.newPassword;
+  const user = await User.findOne({ _id: req.user.id });
+
+  if (!user) {
+    return next(new AppError('unAuthorized', 401));
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    return next(new AppError('wrong password', 401));
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'password updated successfully',
+  });
+};
+// const user = await User.findOne({ _id: req.user.id })
 
 const deleteUser = async (req, res, next) => {
   const id = re.params.id;
@@ -128,5 +164,6 @@ module.exports = {
   getUser,
   updateUser,
   profileImageUpload,
-  login
+  login,
+  changePassword,
 };
