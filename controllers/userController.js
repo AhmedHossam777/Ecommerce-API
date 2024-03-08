@@ -65,7 +65,7 @@ const profileImageUpload = async (req, res, next) => {
 
   user.profilePhoto = req.file.path;
   await user.save();
-  
+
   res.status(200).json({
     status: 'success',
     data: 'Photo uploaded successfully',
@@ -107,15 +107,14 @@ const updateUser = async (req, res, next) => {
     return next(new AppError('unAuthorized', 401));
   }
 
-  const newUser = await User.findByIdAndUpdate(id, {
-    username: username,
-    email: email,
-  });
+  user.username = username;
+  user.email = email;
 
-  await newUser.save();
+  await user.save();
+  
   res.status(200).json({
     status: 'success',
-    newUser,
+    user,
   });
 };
 
@@ -144,7 +143,7 @@ const changePassword = async (req, res, next) => {
 // const user = await User.findOne({ _id: req.user.id })
 
 const deleteUser = async (req, res, next) => {
-  const id = re.params.id;
+  const id = req.params.id;
   const user = await User.findById(id);
   if (!user) {
     return next(new AppError('user does not exist', 404));

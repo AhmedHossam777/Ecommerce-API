@@ -1,6 +1,6 @@
 const getTokenFromHeader = (req) => {
-  const authHeader = req.header('Authorization');
-  if (!authHeader || !authHeader.startWith(' bearer')) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
   const token = authHeader.split(' ')[1];
@@ -8,4 +8,4 @@ const getTokenFromHeader = (req) => {
   return token;
 };
 
-module.exports = {getTokenFromHeader}
+module.exports = getTokenFromHeader;

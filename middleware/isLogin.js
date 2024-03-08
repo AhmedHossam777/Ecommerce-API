@@ -6,7 +6,8 @@ const getTokenFromHeader = require('../utils/getTokenFromHeader');
 const verifyToken = require('../utils/verifyToken');
 
 const isLogin = async (req, res, next) => {
-  const token = getTokenFromHeader();
+  const token = getTokenFromHeader(req);
+  // console.log(token);
   if (!token) {
     return next(new AppError('Unauthorized', 401));
   }
