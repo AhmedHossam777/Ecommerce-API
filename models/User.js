@@ -3,7 +3,6 @@ const validator = require('validator');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
-
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -53,7 +52,7 @@ userSchema.methods.comparePassword = async function (password) {
   }
 };
 
-userSchema.methods.createPasswordResetToken = function() {
+userSchema.methods.createPasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString('hex'); // create random token with the 32 character and hex encoding
 
   this.passwordResetToken = crypto // start to encrypt the token in database
@@ -62,7 +61,7 @@ userSchema.methods.createPasswordResetToken = function() {
     .digest('hex'); // the encoding of the token
 
   console.log({ resetToken }, this.passwordResetToken);
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetExpires = Date.now() + 10 * 60 * 60 * 1000;
 
   return resetToken;
 };

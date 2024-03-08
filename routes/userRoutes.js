@@ -8,6 +8,7 @@ const {
   login,
   changePassword,
   forgetPassword,
+  resetPassword
 } = require('../controllers/userController');
 const storage = require('../config/cloudinary');
 const multer = require('multer');
@@ -28,6 +29,7 @@ router.route('/register').post(registerUser);
 router.route('/login').post(login);
 
 router.route('/forget-password').post(forgetPassword);
+router.route('/reset-password/:token').patch(resetPassword);
 
 router
   .route('/upload')

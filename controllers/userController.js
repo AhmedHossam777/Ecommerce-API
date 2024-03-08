@@ -4,6 +4,7 @@ const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const { generateAccessToken } = require('../utils/generateJWT');
 const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
 
 const registerUser = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -151,16 +152,48 @@ const forgetPassword = async (req, res, next) => {
     }
     const resetToken = await user.createPasswordResetToken();
     await user.save();
-    await sendEmail({ email: email, subject: 'Reset Token', message: resetToken });
+    await sendEmail({
+      email: email,
+      subject: 'Reset Token',
+      message: resetToken,
+    });
 
     res.status(200).json({
       status: 'success',
-      message: 'Reset token sent to your email'
+      message: 'Reset token sent to your email',
     });
   } catch (error) {
     console.error('Error in forgetPassword:', error);
     next(error);
   }
+};
+
+const resetPassword = async (req, res, next) => {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token) // because you send the reset token with the url in resetPassword route
+    .digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400));
+  }
+
+  user.password = req.body.password; // we will send the new password via the request body
+
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  const token = await generateAccessToken(user._id);
+  res.status(200).json({
+    status: 'success',
+    token,
+  });
 };
 
 const deleteUser = async (req, res, next) => {
@@ -187,4 +220,5 @@ module.exports = {
   login,
   changePassword,
   forgetPassword,
+  resetPassword,
 };
