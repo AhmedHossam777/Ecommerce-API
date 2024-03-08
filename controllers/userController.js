@@ -120,7 +120,7 @@ const updateUser = async (req, res, next) => {
 const changePassword = async (req, res, next) => {
   const password = req.body.password;
   const newPassword = req.body.newPassword;
-  const user = await User.findOne({ _id: req.user.id });
+  const user = await User.findOne({ _id: req.user.id }).select('+password');
 
   if (!user) {
     return next(new AppError('unAuthorized', 401));

@@ -5,10 +5,10 @@ const verifyToken = (token, secret) => {
     const decoded = jwt.verify(token, secret);
     return decoded;
   } catch (error) {
-    if (err.name === 'TokenExpiredError') {
+    if (error.name === 'TokenExpiredError') {
       return 'TokenExpiredError';
     }
-    console.error(err.message);
+    console.error(error.message);
     return false;
   }
 };
