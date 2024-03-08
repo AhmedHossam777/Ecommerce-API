@@ -11,8 +11,12 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const notFound = require('./middleware/notFound');
 const globalErrorHandler = require('./middleware/globalErrorHandler');
 
+const cookieParser = require('cookie-parser');
+
+
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));

@@ -2,9 +2,13 @@ require('express-async-errors');
 
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
-const { generateAccessToken } = require('../utils/generateJWT');
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require('../utils/generateJWT');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const verifyToken = require('../utils/verifyToken');
 
 const registerUser = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -19,13 +23,17 @@ const registerUser = async (req, res, next) => {
     password: password,
   });
 
-  const token = await generateAccessToken(newUser);
+  const [token, refreshToken] = await Promise.all([
+    generateAccessToken(newUser),
+    generateRefreshToken(newUser),
+  ]);
 
   res.status(201).json({
     status: 'success',
     username: username,
     email: email,
     token,
+    refreshToken,
   });
 };
 
@@ -45,7 +53,18 @@ const login = async (req, res, next) => {
     return next(new AppError('Invalid credentials', 400));
   }
 
-  const token = await generateAccessToken(user);
+  const [token, refreshToken] = await Promise.all([
+    generateAccessToken(user),
+    generateRefreshToken(user),
+  ]);
+
+  // Set the refresh token in a cookie
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true, // Prevent access from client-side scripts
+    secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+    sameSite: 'strict', // Prevent CSRF attacks
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days in milliseconds
+  });
 
   res.status(200).json({
     status: 'success',
@@ -54,68 +73,41 @@ const login = async (req, res, next) => {
   });
 };
 
-const profileImageUpload = async (req, res, next) => {
-  const user = await User.findOne({ _id: req.user.id });
-
-  if (!user) {
-    return next(new AppError('User does not exist', 400));
+const refreshToken = async (req, res, next) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    return next(new AppError('unAuthorized', 401));
   }
 
-  if (!req.file) {
-    return next(new AppError('please upload an image', 400));
+  const decoded = await verifyToken(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET
+  );
+  if (!decoded || decoded === 'TokenExpiredError') {
+    return next(new AppError('invalid refresh token', 401));
   }
 
-  user.profilePhoto = req.file.path;
-  await user.save();
-
-  res.status(200).json({
-    status: 'success',
-    data: 'Photo uploaded successfully',
-    user,
-  });
-};
-
-const getAllUsers = async (req, res, next) => {
-  const users = await User.find();
-  if (!users) {
-    return next(new AppError('there is no users yet', 404));
-  }
-  res.status(200).json({
-    status: 'success',
-    users,
-  });
-};
-
-const getUser = async (req, res, next) => {
-  const id = req.params.id;
-  const user = await User.findById(id);
+  const user = await User.findById(decoded.userId);
   if (!user) {
     return next(new AppError('user does not exist', 404));
   }
 
-  res.status(200).json({
-    status: 'success',
-    user,
+  const [token, newRefreshToken] = await Promise.all([
+    generateAccessToken(user),
+    generateRefreshToken(user),
+  ]);
+
+  res.cookie('refreshToken', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   });
-};
-
-const updateUser = async (req, res, next) => {
-  const { username, email } = req.body;
-
-  const user = await User.findOne({ _id: req.user.id });
-
-  if (!user) {
-    return next(new AppError('unAuthorized', 401));
-  }
-
-  user.username = username;
-  user.email = email;
-
-  await user.save();
 
   res.status(200).json({
     status: 'success',
-    user,
+    token,
+    newRefreshToken,
   });
 };
 
@@ -196,6 +188,71 @@ const resetPassword = async (req, res, next) => {
   });
 };
 
+const profileImageUpload = async (req, res, next) => {
+  const user = await User.findOne({ _id: req.user.id });
+
+  if (!user) {
+    return next(new AppError('User does not exist', 400));
+  }
+
+  if (!req.file) {
+    return next(new AppError('please upload an image', 400));
+  }
+
+  user.profilePhoto = req.file.path;
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: 'Photo uploaded successfully',
+    user,
+  });
+};
+
+const getAllUsers = async (req, res, next) => {
+  const users = await User.find();
+  if (!users) {
+    return next(new AppError('there is no users yet', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    users,
+  });
+};
+
+const getUser = async (req, res, next) => {
+  const id = req.params.id;
+  const user = await User.findById(id);
+  if (!user) {
+    return next(new AppError('user does not exist', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    user,
+  });
+};
+
+const updateUser = async (req, res, next) => {
+  const { username, email } = req.body;
+
+  const user = await User.findOne({ _id: req.user.id });
+
+  if (!user) {
+    return next(new AppError('unAuthorized', 401));
+  }
+
+  user.username = username;
+  user.email = email;
+
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    user,
+  });
+};
+
 const deleteUser = async (req, res, next) => {
   const id = req.params.id;
   const user = await User.findById(id);
@@ -221,4 +278,5 @@ module.exports = {
   changePassword,
   forgetPassword,
   resetPassword,
+  refreshToken,
 };

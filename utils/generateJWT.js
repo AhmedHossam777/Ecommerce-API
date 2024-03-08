@@ -17,10 +17,32 @@ const signAccessToken = (userId) => {
   });
 };
 
-const generateAccessToken = async(user,req,res)=>{
+const generateAccessToken = async (user, req, res) => {
   const token = await signAccessToken(user._id);
 
   return token;
-}
+};
 
-module.exports = {generateAccessToken}
+const signRefreshToken = (userId) => {
+  return new Promise((resolve, reject) => {
+    const payload = { userId };
+    const secret = process.env.REFRESH_TOKEN_SECRET;
+    const option = { expiresIn: process.env.REFRESH_TOKEN_LIFE };
+
+    jwt.sign(payload, secret, option, (err, token) => {
+      if (err) {
+        reject(new Error(err.message));
+      } else {
+        resolve(token);
+      }
+    });
+  });
+};
+
+const generateRefreshToken = async (user, req, res) => {
+  const token = await signRefreshToken(user._id);
+
+  return token;
+};
+
+module.exports = { generateAccessToken, generateRefreshToken };
