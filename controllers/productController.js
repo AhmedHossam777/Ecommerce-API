@@ -49,7 +49,7 @@ const updateProduct = async (req, res, next) => {
 	const product = await Product.findById(productId);
 	if (!product) return next(new AppError('there no product with that id', 404));
 	
-	const newProduct = await Product.findByIdAndUpdate(productId, newData);
+	const newProduct = await Product.findByIdAndUpdate(productId, newData, { new: true, runValidators: true });
 	
 	res.status(200).json({
 		status: 'success',

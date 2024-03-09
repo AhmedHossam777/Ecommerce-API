@@ -7,6 +7,7 @@ const connectDB = require('./config/connectDB');
 
 const userRoutes = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const notFound = require('./middleware/notFound');
 const globalErrorHandler = require('./middleware/globalErrorHandler');
@@ -19,12 +20,13 @@ app.use(express.json());
 app.use(cookieParser());
 
 if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+	app.use(morgan('dev'));
 }
 
 // Routes
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/categories', categoryRoutes);
+app.use('/api/v1/products', productRoutes);
 
 // Error handling
 app.use(globalErrorHandler);
@@ -32,11 +34,11 @@ app.use(notFound);
 
 const port = process.env.PORT || 3000;
 app.listen(port, async () => {
-  try {
-    await connectDB(process.env.MONGO_URI);
-    console.log('Connected to MongoDB');
-    console.log(`Listening on port ${port}`);
-  } catch (error) {
-    console.log(error.message);
-  }
+	try {
+		await connectDB(process.env.MONGO_URI);
+		console.log('Connected to MongoDB');
+		console.log(`Listening on port ${port}`);
+	} catch (error) {
+		console.log(error.message);
+	}
 });
